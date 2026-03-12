@@ -62,6 +62,48 @@ body {
   height: 1px;
   background: linear-gradient(90deg, transparent, rgba(100, 140, 255, 0.2), transparent);
 }
+.detail {
+  display: none;
+  align-items: center;
+  gap: 0.8vw;
+  align-self: center;
+}
+.detail.visible {
+  display: flex;
+}
+.value-sm {
+  font-family: 'Space Grotesk', monospace, sans-serif;
+  font-size: 5vw;
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  color: #fff;
+  text-shadow:
+    0 0 30px rgba(100, 140, 255, 0.2),
+    0 0 60px rgba(100, 140, 255, 0.08);
+}
+.unit-sm {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.label-sm {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 0.7vw;
+  font-weight: 300;
+  text-transform: uppercase;
+  letter-spacing: 0.35em;
+  margin-top: 0.6vw;
+  color: rgba(100, 140, 255, 0.4);
+}
+.sep-sm {
+  font-family: 'Space Grotesk', monospace, sans-serif;
+  font-size: 4.5vw;
+  font-weight: 300;
+  line-height: 1;
+  color: rgba(100, 140, 255, 0.15);
+  align-self: flex-start;
+}
 @media (max-width: 768px) {
   .value { font-size: 13vw; }
   .sep { font-size: 11vw; }
@@ -74,36 +116,57 @@ body {
 <div id="countdown">
   <div class="unit"><div class="value" id="mo">00</div><div class="label">Months</div><div class="line"></div></div>
   <div class="sep">:</div>
+  <div class="unit"><div class="value" id="wk">00</div><div class="label">Weeks</div><div class="line"></div></div>
+  <div class="sep">:</div>
   <div class="unit"><div class="value" id="da">00</div><div class="label">Days</div><div class="line"></div></div>
   <div class="sep">:</div>
   <div class="unit"><div class="value" id="hr">00</div><div class="label">Hours</div><div class="line"></div></div>
-  <div class="sep">:</div>
-  <div class="unit"><div class="value" id="mi">00</div><div class="label">Minutes</div><div class="line"></div></div>
+  <div class="detail" id="detail">
+    <div class="sep-sm">:</div>
+    <div class="unit-sm"><div class="value-sm" id="mi">00</div><div class="label-sm">Min</div></div>
+    <div class="sep-sm">:</div>
+    <div class="unit-sm"><div class="value-sm" id="se">00</div><div class="label-sm">Sec</div></div>
+  </div>
 </div>
 <script>
-// Hardcoded start: March 12, 2026 — consistent across all devices
-const start = new Date(2026, 2, 12).getTime();
-const target = new Date(2026, 6, 12).getTime();
+// Locked start: 9 March 2026 (Monday), 00:00 GMT — 4 months target: 9 July 2026, 00:00 GMT
+const start = Date.UTC(2026, 2, 9, 0, 0, 0);
+const target = Date.UTC(2026, 6, 9, 0, 0, 0);
 
 const moEl = document.getElementById('mo');
+const wkEl = document.getElementById('wk');
 const daEl = document.getElementById('da');
 const hrEl = document.getElementById('hr');
 const miEl = document.getElementById('mi');
+const seEl = document.getElementById('se');
+const detailEl = document.getElementById('detail');
+
+let showDetail = false;
+document.addEventListener('keyup', (e) => {
+  if (e.key === 't' || e.key === 'T') {
+    showDetail = !showDetail;
+    detailEl.classList.toggle('visible', showDetail);
+  }
+});
 
 function getRemaining(now) {
   const end = new Date(target);
   const cur = new Date(Math.min(now, target));
-  let months = (end.getFullYear() - cur.getFullYear()) * 12 + (end.getMonth() - cur.getMonth());
-  const shifted = new Date(cur.getFullYear(), cur.getMonth() + months, cur.getDate(), cur.getHours(), cur.getMinutes(), cur.getSeconds(), cur.getMilliseconds());
-  if (shifted > end) months--;
-  const base = new Date(cur.getFullYear(), cur.getMonth() + months, cur.getDate(), cur.getHours(), cur.getMinutes(), cur.getSeconds(), cur.getMilliseconds());
-  const diffMs = end - base;
+  // Months (UTC)
+  let months = (end.getUTCFullYear() - cur.getUTCFullYear()) * 12 + (end.getUTCMonth() - cur.getUTCMonth());
+  const shifted = Date.UTC(cur.getUTCFullYear(), cur.getUTCMonth() + months, cur.getUTCDate(), cur.getUTCHours(), cur.getUTCMinutes(), cur.getUTCSeconds());
+  if (shifted > target) months--;
+  const base = Date.UTC(cur.getUTCFullYear(), cur.getUTCMonth() + months, cur.getUTCDate(), cur.getUTCHours(), cur.getUTCMinutes(), cur.getUTCSeconds());
+  const diffMs = target - base;
   const totalSec = Math.floor(diffMs / 1000);
+  const totalDays = Math.floor(totalSec / 86400);
   return {
     months: Math.max(0, months),
-    days: Math.floor(totalSec / 86400),
+    weeks: Math.floor(totalDays / 7),
+    days: totalDays % 7,
     hours: Math.floor((totalSec % 86400) / 3600),
-    minutes: Math.floor((totalSec % 3600) / 60)
+    minutes: Math.floor((totalSec % 3600) / 60),
+    seconds: totalSec % 60
   };
 }
 
@@ -113,16 +176,20 @@ function update() {
   const now = Date.now();
   if (now >= target) {
     moEl.textContent = '00';
+    wkEl.textContent = '00';
     daEl.textContent = '00';
     hrEl.textContent = '00';
     miEl.textContent = '00';
+    seEl.textContent = '00';
     return;
   }
   const r = getRemaining(now);
   moEl.textContent = pad(r.months);
+  wkEl.textContent = pad(r.weeks);
   daEl.textContent = pad(r.days);
   hrEl.textContent = pad(r.hours);
   miEl.textContent = pad(r.minutes);
+  seEl.textContent = pad(r.seconds);
   requestAnimationFrame(update);
 }
 update();
