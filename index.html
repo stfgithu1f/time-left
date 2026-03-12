@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Time Left</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;700&display=swap');
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { width: 100%; height: 100%; background: #050508; overflow: hidden; }
+body {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background:
+    radial-gradient(ellipse at 50% 50%, rgba(20, 20, 40, 0.8) 0%, transparent 70%),
+    #050508;
+}
+#countdown {
+  display: flex;
+  gap: 2vw;
+  user-select: none;
+}
+.unit {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+}
+.value {
+  font-family: 'Space Grotesk', monospace, sans-serif;
+  font-size: 10vw;
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  color: #fff;
+  text-shadow:
+    0 0 40px rgba(100, 140, 255, 0.3),
+    0 0 80px rgba(100, 140, 255, 0.1);
+}
+.label {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 1.2vw;
+  font-weight: 300;
+  text-transform: uppercase;
+  letter-spacing: 0.35em;
+  margin-top: 1.2vw;
+  color: rgba(100, 140, 255, 0.5);
+}
+.sep {
+  font-family: 'Space Grotesk', monospace, sans-serif;
+  font-size: 9vw;
+  font-weight: 300;
+  line-height: 1;
+  align-self: flex-start;
+  color: rgba(100, 140, 255, 0.15);
+}
+.line {
+  position: absolute;
+  bottom: -0.5vw;
+  width: 100%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(100, 140, 255, 0.2), transparent);
+}
+@media (max-width: 768px) {
+  .value { font-size: 13vw; }
+  .sep { font-size: 11vw; }
+  .label { font-size: 2.2vw; }
+  #countdown { gap: 1.5vw; }
+}
+</style>
+</head>
+<body>
+<div id="countdown">
+  <div class="unit"><div class="value" id="mo">00</div><div class="label">Months</div><div class="line"></div></div>
+  <div class="sep">:</div>
+  <div class="unit"><div class="value" id="da">00</div><div class="label">Days</div><div class="line"></div></div>
+  <div class="sep">:</div>
+  <div class="unit"><div class="value" id="hr">00</div><div class="label">Hours</div><div class="line"></div></div>
+  <div class="sep">:</div>
+  <div class="unit"><div class="value" id="mi">00</div><div class="label">Minutes</div><div class="line"></div></div>
+</div>
+<script>
+// Hardcoded start: March 12, 2026 — consistent across all devices
+const start = new Date(2026, 2, 12).getTime();
+const target = new Date(2026, 6, 12).getTime();
+
+const moEl = document.getElementById('mo');
+const daEl = document.getElementById('da');
+const hrEl = document.getElementById('hr');
+const miEl = document.getElementById('mi');
+
+function getRemaining(now) {
+  const end = new Date(target);
+  const cur = new Date(Math.min(now, target));
+  let months = (end.getFullYear() - cur.getFullYear()) * 12 + (end.getMonth() - cur.getMonth());
+  const shifted = new Date(cur.getFullYear(), cur.getMonth() + months, cur.getDate(), cur.getHours(), cur.getMinutes(), cur.getSeconds(), cur.getMilliseconds());
+  if (shifted > end) months--;
+  const base = new Date(cur.getFullYear(), cur.getMonth() + months, cur.getDate(), cur.getHours(), cur.getMinutes(), cur.getSeconds(), cur.getMilliseconds());
+  const diffMs = end - base;
+  const totalSec = Math.floor(diffMs / 1000);
+  return {
+    months: Math.max(0, months),
+    days: Math.floor(totalSec / 86400),
+    hours: Math.floor((totalSec % 86400) / 3600),
+    minutes: Math.floor((totalSec % 3600) / 60)
+  };
+}
+
+function pad(n) { return String(n).padStart(2, '0'); }
+
+function update() {
+  const now = Date.now();
+  if (now >= target) {
+    moEl.textContent = '00';
+    daEl.textContent = '00';
+    hrEl.textContent = '00';
+    miEl.textContent = '00';
+    return;
+  }
+  const r = getRemaining(now);
+  moEl.textContent = pad(r.months);
+  daEl.textContent = pad(r.days);
+  hrEl.textContent = pad(r.hours);
+  miEl.textContent = pad(r.minutes);
+  requestAnimationFrame(update);
+}
+update();
+</script>
+</body>
+</html>
